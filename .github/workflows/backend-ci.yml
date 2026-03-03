@@ -1,0 +1,51 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'todo-backend/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'todo-backend/**'
+
+jobs:
+  lint-and-test:
+    name: Lint, Build & Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: todo-backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefix todo-backend
+
+      - name: Lint
+        run: npm run lint --prefix todo-backend
+
+      - name: Build
+        run: npm run build --prefix todo-backend
+
+      - name: Run tests with coverage
+        run: npm test --prefix todo-backend
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '20.x'
+        with:
+          name: backend-coverage
+          path: todo-backend/coverage/
+          retention-days: 7
